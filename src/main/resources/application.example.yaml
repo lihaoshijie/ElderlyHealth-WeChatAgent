@@ -84,6 +84,11 @@ mcp:
   ticket:
     npx-path: D:\\npx.cmd
 
+# 家庭守护定时任务（默认每晚 20:00 日报、21:00 漏服提醒；测试可临时改小间隔验证）
+family:
+  daily-report-cron: "0 0 20 * * *"
+  missed-med-cron: "0 0 21 * * *"
+
 # 应用基础域名（中转页面用）
 # 开发: http://localhost:8080  内网: http://192.168.x.x:8080  线上: https://your-domain.com
 app:

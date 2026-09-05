@@ -4,6 +4,7 @@ import com.elderlyhealth.agent.service.AmapService;
 import com.elderlyhealth.agent.service.HealthManagementService;
 import com.elderlyhealth.agent.service.PharmacyResponseFormatter;
 import com.elderlyhealth.agent.service.ReminderConfigService;
+import com.elderlyhealth.agent.service.VitalAlertService;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,16 +22,19 @@ public class HealthManagementTool {
     private final AmapService amap;
     private final PharmacyResponseFormatter pharmacyFormatter;
     private final ReminderConfigService reminders;
+    private final VitalAlertService vitalAlertService;
     private final String healthExamUrl;
     private static final Pattern TIME = Pattern.compile("(?:^|[,，\\s])([01]?\\d|2[0-3]):([0-5]\\d)(?:$|[,，\\s])");
 
     public HealthManagementTool(HealthManagementService health, AmapService amap, ReminderConfigService reminders,
                                 PharmacyResponseFormatter pharmacyFormatter,
+                                VitalAlertService vitalAlertService,
                                 @Value("${health.exam.url:}") String healthExamUrl) {
         this.health = health;
         this.amap = amap;
         this.reminders = reminders;
         this.pharmacyFormatter = pharmacyFormatter;
+        this.vitalAlertService = vitalAlertService;
         this.healthExamUrl = healthExamUrl == null ? "" : healthExamUrl.trim();
     }
 
@@ -59,11 +63,13 @@ public class HealthManagementTool {
         return count == 0 ? result : result + " 已按时段创建 " + count + " 个每日服药提醒。";
     }
 
-    @Tool(name = "record_vital", value = "记录血压、血糖、体重、体温等健康指标，长期留存并用于健康趋势回顾。")
+    @Tool(name = "record_vital", value = "记录血压、血糖、体重、体温等健康指标，长期留存并用于健康趋势回顾；记录后系统会自动做三级风险分级（绿/黄/红），红色高危及异常时会提示就医并通知已绑定的家人。")
     public String recordVital(@P("指标名称，例如血压或空腹血糖") String type, @P("指标值") String value,
                               @P("测量时间，仅当用户明确说出具体日期时间时才填写，例如「今天早上」「8月3日 20:30」，用户没说时间就留空，绝不要编造日期") String measuredAt,
                               @P("用户ID，系统自动填充") String userId) {
-        return health.recordVital(userId, type, value, measuredAt);
+        String base = health.recordVital(userId, type, value, measuredAt);
+        String alert = vitalAlertService.checkAndNotify(userId, type, value, measuredAt);
+        return alert == null ? base : base + alert;
     }
 
     @Tool(name = "log_medication", value = "记录用户已完成一次服药。处理「我吃了XX」「刚吃了XX」「服用XX」等服药打卡。药品名称不需要提前登记，自动补充到用药档案。")

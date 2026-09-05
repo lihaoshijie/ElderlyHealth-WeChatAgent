@@ -220,3 +220,36 @@ CREATE TABLE IF NOT EXISTS doc_embeddings (
 
 -- 兼容补充：admin_user_info.nickname（旧库升级幂等）
 ALTER TABLE admin_user_info ADD COLUMN IF NOT EXISTS nickname VARCHAR(128) DEFAULT NULL;
+
+-- ============================================================
+-- M1: 家庭联动 / 体征预警
+-- ============================================================
+
+-- 家庭绑定（长辈-守护人）
+-- status: INVITED(已生成邀请码待确认) / ACTIVE(已绑定)
+-- elder_user_id = 长辈的微信用户ID; guardian_user_id = 子女/守护人的微信用户ID
+CREATE TABLE IF NOT EXISTS family_bind (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    elder_user_id VARCHAR(64) NOT NULL,
+    guardian_user_id VARCHAR(64) DEFAULT NULL,
+    invite_code VARCHAR(16) DEFAULT NULL,
+    relation VARCHAR(32) DEFAULT '子女',
+    status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_elder_guardian (elder_user_id, guardian_user_id),
+    INDEX idx_guardian (guardian_user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 体征预警记录（红/黄级别，供追溯与子女通知去重）
+CREATE TABLE IF NOT EXISTS health_alert (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    vital_type VARCHAR(32) NOT NULL,
+    vital_value VARCHAR(64),
+    level VARCHAR(8) NOT NULL,
+    advice TEXT,
+    notified_guardian TINYINT DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_time (user_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

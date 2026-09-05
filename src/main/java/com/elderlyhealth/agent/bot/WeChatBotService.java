@@ -1053,6 +1053,18 @@ public class WeChatBotService {
         }
     }
 
+    /** 家庭守护/健康日报等主动消息推送（无"提醒"前缀）。 */
+    public boolean sendGuardianMessage(String userId, String content) {
+        try {
+            getClient().sendText(userId, content);
+            log.info("守护消息已发送: userId={}, len={}", userId, content == null ? 0 : content.length());
+            return true;
+        } catch (Exception e) {
+            log.error("守护消息发送失败: userId={}", userId, e);
+            return false;
+        }
+    }
+
     private void handleKbListCommand(String fromUserId) {
         try {
             List<Map<String, Object>> docs = jdbcTemplate.queryForList(

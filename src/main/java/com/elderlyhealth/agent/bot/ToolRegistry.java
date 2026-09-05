@@ -135,13 +135,21 @@ public class ToolRegistry {
         DOMAIN_TOOLS.put("塔罗", Arrays.asList("tarot"));
 
         DOMAIN_KEYWORDS.put("健康", Arrays.asList("健康", "身体", "体检", "医疗", "医药", "医院", "症状", "药品", "用药", "营养", "卡路里", "脂肪",
-                "身体指标", "血压", "血糖", "药房", "健康报告", "体检报告"));
+                "身体指标", "血压", "血糖", "药房", "健康报告", "体检报告", "依从", "漏服", "服药率", "按时吃药"));
         DOMAIN_TOOLS.put("健康", Arrays.asList("body_fat_rate", "food_nutrition", "list_nutrition_foods", "health_tip",
                 "health_overview", "record_profile_fact", "add_medication", "record_vital", "log_medication",
                 "find_pharmacy", "symptom_screening", "interpret_health_report", "save_health_report",
                 "interpret_latest_health_report", "open_health_exam", "create_health_plan",
                 "daily_health_briefing", "schedule_health_briefing",
-                "record_meal", "analyze_meal", "today_diet_summary", "rag_search"));
+                "record_meal", "analyze_meal", "today_diet_summary", "rag_search",
+                "medication_adherence_report", "family_bind_start", "family_bind_confirm",
+                "family_guardians", "family_elders", "family_unbind", "family_daily_report"));
+
+        DOMAIN_KEYWORDS.put("家庭守护", Arrays.asList("家人", "子女", "孩子", "女儿", "儿子", "老伴", "孙子", "孙女", "儿子", "绑定", "守护",
+                "健康日报", "日报", "给子女", "给我孩子", "绑定家人", "守护人"));
+        DOMAIN_TOOLS.put("家庭守护", Arrays.asList("family_bind_start", "family_bind_confirm", "family_guardians",
+                "family_elders", "family_unbind", "family_daily_report", "medication_adherence_report",
+                "record_vital", "health_overview", "daily_health_briefing", "rag_search"));
 
         DOMAIN_KEYWORDS.put("菜谱", Arrays.asList("菜谱", "食谱", "做饭", "烹饪", "炒菜", "菜单"));
         DOMAIN_TOOLS.put("菜谱", Arrays.asList("caipu"));

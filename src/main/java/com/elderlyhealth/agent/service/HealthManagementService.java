@@ -15,12 +15,16 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** Lightweight, user-scoped health records used by the WeChat workflow. */
 @Slf4j
@@ -326,6 +330,106 @@ public class HealthManagementService {
         return "\u5065\u5eb7\u6863\u6848\u5df2\u6e05\u7a7a\n\n"
                 + "\u6240\u6709\u7528\u836f\u8bb0\u5f55\u3001\u5065\u5eb7\u6307\u6807\u3001\u4f53\u68c0\u62a5\u544a\u3001\u5065\u5eb7\u65b9\u6848\u548c\u4e2a\u4eba\u4fe1\u606f\u5df2\u5168\u90e8\u5220\u9664\u3002\n"
                 + "\u53ef\u91cd\u65b0\u5f00\u59cb\u767b\u8bb0\u7528\u836f\u548c\u8bb0\u5f55\u5065\u5eb7\u6570\u636e\u3002";
+    }
+
+    // ============ M1: 用药依从性 ============
+
+    private LocalDate parseLogDate(String text, LocalDate today) {
+        if (text == null || text.isBlank()) return today;
+        String s = text.trim();
+        if (s.contains("昨天")) return today.minusDays(1);
+        Matcher m = Pattern.compile("(\\d{1,2})\u6708(\\d{1,2})\u65e5").matcher(s);
+        if (m.find()) {
+            try {
+                int month = Integer.parseInt(m.group(1));
+                int day = Integer.parseInt(m.group(2));
+                LocalDate d = LocalDate.of(today.getYear(), month, day);
+                if (d.isAfter(today)) d = d.minusYears(1);
+                return d;
+            } catch (Exception ignored) { }
+        }
+        return today;
+    }
+
+    /** 最近 N 天应服药天数为 N，实际打卡天数来自 medicationLogs（按药物名 + 日期）。 */
+    public synchronized String medicationAdherenceReport(String userId, int days) {
+        int n = days <= 0 ? 7 : Math.min(days, 90);
+        Map<String, Object> data = record(userId);
+        List<Map<String, Object>> meds = list(data, "medications");
+        if (meds.isEmpty()) return "用药档案中还没有登记药物，请先登记药品（如：登记用药 硝苯地平 1片 早上 还剩10片）。";
+        List<Map<String, Object>> logs = list(data, "medicationLogs");
+        LocalDate today = LocalDate.now();
+        StringBuilder out = new StringBuilder("\u3010\u670d\u836f\u4f9d\u4ece\u6027\u62a5\u544a\u3011\u8fd1 ").append(n).append(" \u5929\n\n");
+        double totalRateSum = 0;
+        int medCount = 0;
+        for (Map<String, Object> med : meds) {
+            String name = String.valueOf(med.get("name"));
+            Set<LocalDate> takenDays = new HashSet<>();
+            for (Map<String, Object> log : logs) {
+                if (name.equalsIgnoreCase(String.valueOf(log.get("name")))) {
+                    takenDays.add(parseLogDate(String.valueOf(log.getOrDefault("takenAt", "")), today));
+                }
+            }
+            long actual = takenDays.stream().filter(d -> !d.isBefore(today.minusDays(n - 1L)) && !d.isAfter(today)).count();
+            int rate = (int) Math.round(actual * 100.0 / n);
+            totalRateSum += rate;
+            medCount++;
+            out.append("\u2022 ").append(name).append("\uff1a").append(actual).append("/").append(n)
+               .append(" \u5929\uff08").append(rate).append("%\uff09");
+            if (rate < 60) out.append("  \u26a0\ufe0f \u4f4e\u4e8e 60%\uff0c\u5efa\u8bae\u6ce8\u610f\u6309\u65f6\u670d\u836f");
+            out.append("\n");
+        }
+        int avg = medCount == 0 ? 0 : (int) Math.round(totalRateSum / medCount);
+        out.append("\n\u7efc\u5408\u4f9d\u4ece\u7387\uff1a").append(avg).append("%\n\n")
+           .append("\u63d0\u793a\uff1a\u5982\u679c\u67d0\u5929\u5fd8\u8bb0\u662f\u5426\u670d\u836f\uff0c\u4e0d\u8981\u53cc\u500d\u8865\u670d\uff0c\u4e0d\u786e\u5b9a\u65f6\u53ef\u54a8\u8be2\u533b\u751f\u6216\u836f\u5e08\u3002");
+        return out.toString();
+    }
+
+    /** 摘要行：近 N 天综合依从率 + 今日漏服药物列表。 */
+    public synchronized String medicationAdherenceSummary(String userId, int days) {
+        int n = days <= 0 ? 7 : Math.min(days, 90);
+        Map<String, Object> data = record(userId);
+        List<Map<String, Object>> meds = list(data, "medications");
+        if (meds.isEmpty()) return "暂无登记用药";
+        List<Map<String, Object>> logs = list(data, "medicationLogs");
+        LocalDate today = LocalDate.now();
+        double totalRate = 0;
+        int medCount = 0;
+        for (Map<String, Object> med : meds) {
+            String name = String.valueOf(med.get("name"));
+            Set<LocalDate> takenDays = new HashSet<>();
+            for (Map<String, Object> log : logs) {
+                if (name.equalsIgnoreCase(String.valueOf(log.get("name")))) {
+                    takenDays.add(parseLogDate(String.valueOf(log.getOrDefault("takenAt", "")), today));
+                }
+            }
+            long actual = takenDays.stream().filter(d -> !d.isBefore(today.minusDays(n - 1L)) && !d.isAfter(today)).count();
+            totalRate += actual * 100.0 / n;
+            medCount++;
+        }
+        int avg = medCount == 0 ? 0 : (int) Math.round(totalRate / medCount);
+        return "依从率 " + avg + "%";
+    }
+
+    /** 今日尚未打卡的药物名单（无登记药物时返回空列表）。 */
+    public synchronized List<String> listMedicationsNotTakenToday(String userId) {
+        List<Map<String, Object>> meds = list(record(userId), "medications");
+        if (meds.isEmpty()) return List.of();
+        List<Map<String, Object>> logs = list(record(userId), "medicationLogs");
+        LocalDate today = LocalDate.now();
+        Set<String> takenToday = new HashSet<>();
+        for (Map<String, Object> log : logs) {
+            if (today.equals(parseLogDate(String.valueOf(log.getOrDefault("takenAt", "")), today))) {
+                Object name = log.get("name");
+                if (name != null) takenToday.add(String.valueOf(name).toLowerCase());
+            }
+        }
+        List<String> missed = new ArrayList<>();
+        for (Map<String, Object> med : meds) {
+            String name = String.valueOf(med.get("name"));
+            if (!takenToday.contains(name.toLowerCase())) missed.add(name);
+        }
+        return missed;
     }
 
     public synchronized String savePlan(String userId, String conditions, String goal, String content) {
