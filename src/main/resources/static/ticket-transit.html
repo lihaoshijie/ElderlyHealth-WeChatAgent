@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>购票跳转</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}
+body{padding:24px 16px;background:#f5f7fa}
+.container{max-width:520px;margin:0 auto}
+.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px}
+.card .title{font-size:18px;font-weight:700;margin-bottom:12px}
+.card .row{display:flex;justify-content:space-between;padding:6px 0;color:#333;font-size:15px}
+.card .row span:last-child{font-weight:500}
+.warn{color:#e53e3e;line-height:1.6;margin-bottom:16px;font-size:14px}
+.btn{width:100%;background:#0066cc;color:#fff;border:none;border-radius:8px;padding:14px;font-size:17px;cursor:pointer}
+.btn:active{background:#0052a3}
+.note{font-size:12px;color:#999;margin-top:12px;text-align:center;line-height:1.6}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="infoCard" class="card hidden">
+    <div class="title" id="cardTitle">出行信息</div>
+    <div class="row"><span id="labelNo">车次/航班：</span><span id="flightNo">-</span></div>
+    <div class="row"><span>出发：</span><span id="fromStation">-</span></div>
+    <div class="row"><span>到达：</span><span id="toStation">-</span></div>
+    <div class="row"><span>日期：</span><span id="travelDate">-</span></div>
+  </div>
+
+  <div id="warn" class="warn"></div>
+  <button id="btn" class="btn" onclick="doOpen()">前往购票</button>
+  <p class="note">
+    ⚠️ 本平台仅提供行程规划与购票引导，实际购票服务由
+    <span id="provider">12306/携程</span> 官方平台提供。
+  </p>
+</div>
+<script>
+(function(){
+  var p = new URLSearchParams(location.search);
+  var type = p.get('type')||'trains';
+  var from = p.get('from')||'';
+  var to   = p.get('to')||'';
+  var date = p.get('date')||'';
+  var no = p.get('flightNo')||p.get('trainNo')||'';
+  var isFlight = type === 'flight';
+  var isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+
+  document.getElementById('provider').textContent = isFlight ? '携程' : '12306';
+
+  if (from && to && date) {
+    document.getElementById('infoCard').classList.remove('hidden');
+    document.getElementById('cardTitle').textContent = isFlight ? '航班信息' : '乘车信息';
+    document.getElementById('labelNo').textContent = isFlight ? '航班号：' : '车次：';
+    document.getElementById('flightNo').textContent = no || (from+'→'+to);
+    document.getElementById('fromStation').textContent = from;
+    document.getElementById('toStation').textContent = to;
+    document.getElementById('travelDate').textContent = date;
+  }
+
+  // 航班 → 携程，火车 → 12306
+  var scheme, web;
+  if (isFlight) {
+    scheme = 'ctrip://wireless/search/flight';
+    web = 'https://m.ctrip.com/html5/flight/swift/';
+  } else {
+    scheme = 'cn.12306://ticket';
+    web = 'https://kyfw.12306.cn/otn/leftTicket/init';
+  }
+
+  if (isWeChat) {
+    document.getElementById('warn').textContent = '当前为微信环境，无法直接打开 '+(isFlight?'携程':'12306')+' App。请点击右上角「...」→ 选择「在浏览器打开链接」。';
+    document.getElementById('btn').textContent = '在浏览器打开';
+    window.doOpen = function(){ alert('请点击右上角「...」→「在浏览器打开链接」\n或复制链接到手机浏览器打开。'); };
+  } else {
+    document.getElementById('warn').textContent = '将优先尝试启动 App；若未安装，将自动打开网页版。';
+    window.doOpen = function(){
+      try{ location.href = scheme; }catch(e){}
+      setTimeout(function(){ location.href = web; }, 800);
+    };
+  }
+})();
+</script>
+</body>
+</html>

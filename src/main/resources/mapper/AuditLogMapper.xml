@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.Myself.demo.mapper.AuditLogMapper">
+    <insert id="insert">
+        INSERT INTO audit_log(user_id, action, resource_type, resource_id, detail, ip_address, result)
+        VALUES(#{userId}, #{action}, #{resourceType}, #{resourceId}, #{detail}, #{ipAddress}, #{result})
+    </insert>
+
+    <select id="findByUserId" resultType="com.Myself.demo.entity.AuditLog">
+        SELECT * FROM audit_log WHERE user_id = #{userId} ORDER BY created_at DESC
+    </select>
+
+    <select id="findByAction" resultType="com.Myself.demo.entity.AuditLog">
+        SELECT * FROM audit_log WHERE action = #{action} ORDER BY created_at DESC
+    </select>
+</mapper>

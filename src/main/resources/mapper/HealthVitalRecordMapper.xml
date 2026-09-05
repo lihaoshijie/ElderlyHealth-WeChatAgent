@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.Myself.demo.mapper.HealthVitalRecordMapper">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO health_vital_record(user_id, type, value, measured_at, created_at)
+        VALUES(#{userId}, #{type}, #{value}, #{measuredAt}, NOW())
+    </insert>
+
+    <select id="findRecentByUserId" resultType="com.Myself.demo.entity.HealthVitalRecord">
+        SELECT * FROM health_vital_record
+        WHERE user_id = #{userId}
+        ORDER BY measured_at DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

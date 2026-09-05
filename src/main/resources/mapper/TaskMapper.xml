@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.Myself.demo.mapper.TaskMapper">
+
+    <resultMap id="TaskResult" type="com.Myself.demo.entity.Task">
+        <id property="taskId" column="task_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="taskType" column="task_type"/>
+        <result property="status" column="status"/>
+        <result property="context" column="context"/>
+        <result property="errorCount" column="error_count"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="TaskResult">
+        SELECT * FROM tasks WHERE task_id = #{taskId}
+    </select>
+
+    <select id="findByUserIdAndStatus" resultMap="TaskResult">
+        SELECT * FROM tasks WHERE user_id = #{userId} AND status = #{status}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO tasks (task_id, user_id, task_type, status, context, error_count, created_at, updated_at)
+        VALUES (#{taskId}, #{userId}, #{taskType}, #{status}, #{context}, #{errorCount}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <update id="updateContext">
+        UPDATE tasks SET context = #{context}, status = #{status}, updated_at = NOW()
+        WHERE task_id = #{taskId}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE tasks SET status = #{status}, updated_at = NOW()
+        WHERE task_id = #{taskId}
+    </update>
+
+    <update id="incrementError">
+        UPDATE tasks SET error_count = error_count + 1, updated_at = NOW()
+        WHERE task_id = #{taskId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM tasks WHERE task_id = #{taskId}
+    </delete>
+
+</mapper>
