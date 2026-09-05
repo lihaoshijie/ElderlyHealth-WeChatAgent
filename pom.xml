@@ -8,11 +8,11 @@
 		<version>4.0.7</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.myself</groupId>
-	<artifactId>demo</artifactId>
+	<groupId>com.elderlyhealth</groupId>
+	<artifactId>elderly-health-agent</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
+	<name>elderly-health-agent</name>
+	<description>银龄智护 ElderlyHealth-WeChatAgent —— 老年人全周期健康管理微信智能 Agent</description>
 	<url/>
 	<licenses>
 		<license/>

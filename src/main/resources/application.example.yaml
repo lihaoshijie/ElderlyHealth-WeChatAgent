@@ -1,0 +1,90 @@
+# ============================================================
+# 银龄智护 ElderlyHealth-WeChatAgent 配置模板
+# 复制本文件为 src/main/resources/application.yaml 并填入真实密钥
+#   cp src/main/resources/application.example.yaml src/main/resources/application.yaml
+# ============================================================
+spring:
+  application:
+    name: elderly-health-agent
+
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/elderly_health_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: your_db_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+server:
+  address: 127.0.0.1
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+# 天气 / 生活服务第三方密钥（不填则相关工具不可用）
+seniverse:
+  api:
+    key: ${SENIVERSE_API_KEY:}
+tianapi:
+  api:
+    key: ${TIAN_API_KEY:}
+tianApi:
+  key: ${TIAN_API_KEY:}
+flyai:
+  api-key: ${FLYAI_API_KEY:}
+  command: flyai.cmd
+  timeout-seconds: 45
+juhe:
+  api:
+    key: ${JUHE_API_KEY:}
+serpapi:
+  key: ${SERPAPI_KEY:}
+qianfan:
+  api:
+    key: ${QIANFAN_API_KEY:}
+
+# 大模型（阿里百炼/DashScope，qwen 系列）
+llm:
+  api-key: ${A_BAILIAN_API_KEY:your_dashscope_api_key}
+  model: qwen3.8-max
+  base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  max-history: 30
+  token-threshold: 30000
+  log-traffic: false
+  tool-result-max-chars: 10000
+  system-prompt: >-
+    你是银龄智护（ElderlyHealth-WeChatAgent）——面向老年人的全周期健康管理微信智能助手，称呼用户为"叔叔/阿姨"或按记住的称呼，态度亲切、耐心、有温度。
+    回复要求：简短、口语化、避免医学术语（必要时用生活化比喻解释）；涉及剂量/时间/数字等关键信息要清晰准确；健康建议必须附带安全边界（不替代医生诊断/用药，异常请及时就医）。
+    个人信息与健康档案用 remember_fact / 健康档案工具保存。
+     工具规则：浏览全部工具的 description 找相关的，不依赖的并行调；工具调完前不回复；图/二维码必须调工具生成。
+     健康场景：记录体征、用药、饮食时先确认关键数字（语音确认机制），分级预警红色时提醒及时就医并主动通知已绑定的家人。
+     位置相关：已知城市调 get_user_location 拿坐标；不知道先问"你在哪个城市？"。
+     知识库：用 rag_search 查上传的文档内容；问"知识库有哪些文件"时也调 rag_search；健康类问题优先引用知识库/指南口径并说明来源。
+     时效性：用户指定查某个新闻/资讯/事件等具体内容时，静默调用 local_time 获取当前时间（不要向用户说明或回复"我需要先获取时间"之类的话），再执行搜索，直接给出结果。
+
+delivery:
+  app-id: ${DELIVERY_APP_ID:}
+  api-key: ${DELIVERY_API_KEY:}
+
+logging:
+  level:
+    com.elderlyhealth.agent: DEBUG
+    com.elderlyhealth.agent.mapper: WARN
+
+amap:
+  key: ${GAODE_API_KEY:}
+
+# 高德/天气可选
+bili:
+  #cookie: 留空即可，B站工具需要时再填
+  pass:
+
+# MCP 外部进程配置（按需修改为本地路径）
+mcp:
+  ticket:
+    npx-path: D:\\npx.cmd
+
+# 应用基础域名（中转页面用）
+# 开发: http://localhost:8080  内网: http://192.168.x.x:8080  线上: https://your-domain.com
+app:
+  base-url: http://localhost:8080

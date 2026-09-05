@@ -1,3 +1,9 @@
+-- ============================================================
+-- ElderlyHealth-WeChatAgent (银龄智护) 数据库建表脚本
+-- 数据库: elderly_health_db（UTF-8）
+-- 说明: 本文件为唯一权威 schema，src/main/resources/schema.sql 与其保持一致。
+-- 用法: mysql -uroot -p elderly_health_db < sql/schema.sql
+-- ============================================================
 -- 用户信息表
 CREATE TABLE IF NOT EXISTS admin_user_info (
     from_user_id VARCHAR(64) PRIMARY KEY,
@@ -174,7 +180,7 @@ CREATE TABLE IF NOT EXISTS admin_user_voices (
     INDEX idx_msg_id (msg_id)
 );
 
--- ����ָ���¼��
+-- 体征记录表（血压 / 血糖 / 心率 / 体重等）
 CREATE TABLE IF NOT EXISTS health_vital_record (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(64) NOT NULL,
@@ -185,3 +191,32 @@ CREATE TABLE IF NOT EXISTS health_vital_record (
     INDEX idx_user (user_id),
     INDEX idx_time (measured_at)
 );
+
+-- ===== 补充表（doc_embeddings / scheduled_tasks） =====
+
+CREATE TABLE IF NOT EXISTS scheduled_tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    content TEXT NOT NULL,
+    cron VARCHAR(64),
+    trigger_at DATETIME,
+    status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    fail_reason VARCHAR(512),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS doc_embeddings (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    doc_name VARCHAR(256) NOT NULL,
+    chunk_index INT NOT NULL,
+    chunk_text TEXT NOT NULL,
+    embedding JSON NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    uploader VARCHAR(64) DEFAULT NULL,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FULLTEXT INDEX ft_chunk_text (chunk_text) WITH PARSER ngram,
+    INDEX idx_uploader (uploader)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 兼容补充：admin_user_info.nickname（旧库升级幂等）
+ALTER TABLE admin_user_info ADD COLUMN IF NOT EXISTS nickname VARCHAR(128) DEFAULT NULL;

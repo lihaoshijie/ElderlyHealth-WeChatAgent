@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.Myself.demo.mapper.TUserMapper">
-    <select id="findAll" resultType="com.Myself.demo.entity.TUser">
+<mapper namespace="com.elderlyhealth.agent.mapper.TUserMapper">
+    <select id="findAll" resultType="com.elderlyhealth.agent.entity.TUser">
         SELECT * FROM t_user
     </select>
 
-    <select id="findById" resultType="com.Myself.demo.entity.TUser">
+    <select id="findById" resultType="com.elderlyhealth.agent.entity.TUser">
         SELECT * FROM t_user WHERE id = #{id}
     </select>
 
@@ -21,7 +21,7 @@
         DELETE FROM t_user WHERE id = #{id}
     </delete>
 
-    <select id="findPage" resultType="com.Myself.demo.entity.TUser">
+    <select id="findPage" resultType="com.elderlyhealth.agent.entity.TUser">
         SELECT * FROM t_user
         <where>
             <if test="name != null and name != ''">
