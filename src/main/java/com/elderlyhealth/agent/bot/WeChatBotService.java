@@ -97,12 +97,26 @@ public class WeChatBotService {
     /** 用户最近一次会话所归属的 bot 账号（userId → accountId）。 */
     private final ConcurrentHashMap<String, String> userAccountMap = new ConcurrentHashMap<>();
 
-    /** 目标用户自己的 bot client（用户曾在哪个 bot 上会话就用哪个 bot 推送），找不到再退回当前线程 client。 */
+    /**
+     * 目标用户自己的 bot client。优先用最近会话记录；若没有（重启后/守护人从未在当前进程发言），
+     * 遍历所有已注册 bot client，找「context 池里有该用户 token」的那个——守护人 token 已随会话持久化恢复。
+     */
     private ILinkClient clientForUser(String userId) {
-        String accountId = userId == null ? null : userAccountMap.get(userId);
+        if (userId == null) return getClient();
+        String accountId = userAccountMap.get(userId);
         if (accountId != null) {
             ILinkClient c = clientRegistry.get(accountId);
             if (c != null) return c;
+        }
+        // 兜底：遍历各 bot，谁的会话上下文里有该用户就用谁（支持长辈/子女分属不同 bot）
+        for (ILinkClient c : clientRegistry.all().values()) {
+            try {
+                com.github.wechat.ilink.sdk.core.context.ResumeContext rc = c.exportResumeContext();
+                if (rc != null && rc.getConversationContextMap() != null
+                        && rc.getConversationContextMap().containsKey(userId)) {
+                    return c;
+                }
+            } catch (Exception ignored) { }
         }
         return getClient();
     }
