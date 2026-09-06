@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS admin_user (
     username VARCHAR(32) UNIQUE NOT NULL,
     password VARCHAR(128) NOT NULL
 );
-INSERT IGNORE INTO admin_user (username, password) VALUES ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5E');
+INSERT IGNORE INTO admin_user (username, password) VALUES ('admin', 'admin123');
 
 -- 对话历史表（ChatService）
 CREATE TABLE IF NOT EXISTS chat_history (
