@@ -68,13 +68,13 @@ CREATE TABLE IF NOT EXISTS admin_user_voices (
     INDEX idx_msg_id (msg_id)
 );
 
--- 管理员表 + 种子（默认 admin/admin123）
+-- 管理员表 + 种子（默认 admin/admin826350）
 CREATE TABLE IF NOT EXISTS admin_user (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(32) UNIQUE NOT NULL,
     password VARCHAR(128) NOT NULL
 );
-INSERT IGNORE INTO admin_user (username, password) VALUES ('admin', 'admin123');
+INSERT IGNORE INTO admin_user (username, password) VALUES ('admin', 'admin826350');
 
 -- 对话历史表（ChatService）
 CREATE TABLE IF NOT EXISTS chat_history (
