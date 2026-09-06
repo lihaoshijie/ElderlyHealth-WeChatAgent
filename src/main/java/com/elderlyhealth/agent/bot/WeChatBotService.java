@@ -93,6 +93,20 @@ public class WeChatBotService {
         if (!all.isEmpty()) return all.values().iterator().next();
         return client;
     }
+
+    /** 用户最近一次会话所归属的 bot 账号（userId → accountId）。 */
+    private final ConcurrentHashMap<String, String> userAccountMap = new ConcurrentHashMap<>();
+
+    /** 目标用户自己的 bot client（用户曾在哪个 bot 上会话就用哪个 bot 推送），找不到再退回当前线程 client。 */
+    private ILinkClient clientForUser(String userId) {
+        String accountId = userId == null ? null : userAccountMap.get(userId);
+        if (accountId != null) {
+            ILinkClient c = clientRegistry.get(accountId);
+            if (c != null) return c;
+        }
+        return getClient();
+    }
+
     private static final int MAX_IMAGES = 5;
 
     private static final String MEAL_PROMPT = "请严格按照以下格式分析这张食物照片：\n"
@@ -139,6 +153,10 @@ public class WeChatBotService {
         try {
             for (WeixinMessage msg : messages) {
                 if (processedMessages.putIfAbsent(msg.getMessage_id(), Boolean.TRUE) != null) continue;
+                // 记录用户归属的 bot 账号：主动推送（日报/预警/提醒）需用用户自己会话的 bot
+                if (msg.getFrom_user_id() != null && !msg.getFrom_user_id().isBlank()) {
+                    userAccountMap.put(msg.getFrom_user_id(), accountId);
+                }
                 final String aid = accountId;
                 executor.submit(() -> {
                     currentAccountId.set(aid);
@@ -1044,7 +1062,7 @@ public class WeChatBotService {
     public boolean sendReminder(String userId, String content) {
         if (client == null) return false;
         try {
-            getClient().sendText(userId, "⏰ 提醒：" + content);
+            clientForUser(userId).sendText(userId, "⏰ 提醒：" + content);
             log.info("定时提醒已发送: userId={}, content={}", userId, content);
             return true;
         } catch (Exception e) {
@@ -1053,10 +1071,10 @@ public class WeChatBotService {
         }
     }
 
-    /** 家庭守护/健康日报等主动消息推送（无"提醒"前缀）。 */
+    /** 家庭守护/健康日报等主动消息推送（无"提醒"前缀；自动选用用户归属的 bot）。 */
     public boolean sendGuardianMessage(String userId, String content) {
         try {
-            getClient().sendText(userId, content);
+            clientForUser(userId).sendText(userId, content);
             log.info("守护消息已发送: userId={}, len={}", userId, content == null ? 0 : content.length());
             return true;
         } catch (Exception e) {
